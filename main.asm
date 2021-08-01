@@ -7,10 +7,11 @@ call Palette_Init
 
 di
 
-ld a,&C3
-ld (&0038),a
-ld hl,InterruptHandler1
-ld (&0039),hl
+;; Create the smallest possible interrupt handler
+im 1
+ld hl,&C9FB			;; C9 FB are the bytes for the Z80 opcodes EI:RET
+ld (&0038),hl			;; setup interrupt handler
+
 
 call InitCRTC
 
@@ -22,13 +23,13 @@ call InitCRTC
 ;; C000, C0001.. C0062
 ;; C800, C8001
 ld hl,&C000
-ld b,96
+ld b,160
 loopLine:
 	push bc
 		ld b,96 ;; B * 2 = pixels
 		push hl
 		loopRow:
-			ld a,%11001100
+			ld a,%11000000
 			ld (hl),a
 			inc hl
 			djnz loopRow
@@ -48,13 +49,13 @@ _loopLineDone:
 
 ;; Now do the same again, in &8000 using a different colour
 ld hl,&8000
-ld b,96
+ld b,153
 loopLine1:
 	push bc
 		ld b,96 ;; B * 2 = pixels
 		push hl
 		loopRow1:
-			ld a,%00001111
+			ld a,%00000011
 			ld (hl),a
 			inc hl
 			djnz loopRow1
@@ -81,7 +82,7 @@ loop:
 	out (c),c
 	ld bc,&bdff			;Set VSCYNC=255 (Impossible...Disables Vsync)
 	out (c),c
-
+;; This is VDISP and controls if borders are to be displayed by alternating between 255 and 0? Don't fully understand
 ;	ld bc,&BC06
 ;	out (c),c
 ;	ld bc,&BD00
@@ -101,12 +102,11 @@ loop:
 	halt
 	call SetScreenTop
 
-;ld bc,&BC06
-;out (c),c
-;ld bc,&BD00
-;out (c),c
+;	ld bc,&BC06
+;	out (c),c
+;	ld bc,&BD00
+;	out (c),c
 	
-
 	ld bc,&bc07			;Vertical Sync position (VSYNC)
 	out (c),c
 	ld bc,&bd00			;Set VSCYNC=0 now!
@@ -119,41 +119,6 @@ WaitFrame:
          in a,(c)
          rra  		;; Right most bit indicates vSync is happening
          jr nc, WaitFrame
-ret
-
-InterruptHandler1:
-	exx
-	ex af,af'
-		ld a,&C3
-		ld (&0038),a
-		ld hl,InterruptHandler2
-		ld (&0039),hl
-
-		ld bc,&7F00 + 17
-		ld a,&58
-     		out (c),c	;; PENR:&7F{pp} - where pp is the palette/pen number 
-		out (c),a	
-	ex af,af'
-	exx
-	ei
-ret
-
-
-InterruptHandler2:
-	exx
-	ex af,af'
-		ld a,&C3
-		ld (&0038),a
-		ld hl,InterruptHandler1
-		ld (&0039),hl
-
-		ld bc,&7F00 + 17
-		ld a,&57
-     		out (c),c	;; PENR:&7F{pp} - where pp is the palette/pen number 
-		out (c),a
-	ex af,af'
-	exx
-	ei
 ret
 
 InitCRTC:
@@ -188,12 +153,6 @@ out (c),c
 ld bc,&BD00+50
 out (c),c
 
-;; 06 VDISP Vertical Displayed in characters
-;ld bc,&BC06
-;out (c),c
-;ld bc,&BD00+12 ;; Heigth in chars
-;out (c),c
-
 ret
 
 SetScreenTop:
@@ -201,7 +160,7 @@ SetScreenTop:
 	;;R4 = 38 (value - 1)
 	ld bc,&BC04
 	out (c),c
-	ld bc,&BD00+10
+	ld bc,&BD00+19
 	out (c),c
 
 	ld bc,&BC0C ;; R10 DISPH Display start address
@@ -214,7 +173,7 @@ SetScreenBottom:
 
 	ld bc,&BC04
 	out (c),c
-	ld bc,&BD00+28
+	ld bc,&BD00+19
 	out (c),c
 
 	ld bc,&BC0C ;; R10 DISPH Display start address
