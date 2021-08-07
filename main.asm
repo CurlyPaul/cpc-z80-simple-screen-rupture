@@ -3,17 +3,25 @@ run start
 
 start:
 call Screen_Init
-call Palette_Init
-
 di
+
+;; I'm over the maximum width here
+;; 98 wide, and 21*8 height puts me at address 80A 
+;; for the starting point of line two, breaking the 800 line rule
+
 
 ;; Create the smallest possible interrupt handler
 im 1
 ld hl,&C9FB			;; C9 FB are the bytes for the Z80 opcodes EI:RET
 ld (&0038),hl			;; setup interrupt handler
 
-
+;call Palette_Init
 call InitCRTC
+
+;; Note we need to change the screen mode with the PPI as the 
+;; firmware no longer works for us
+ld bc,&7F00+128+4+8+0
+out (c),c
 
 ;;****************************************************
 ;; Draw out some initial screens in memory
@@ -22,55 +30,62 @@ call InitCRTC
 ;; 9408 Bytes
 ;; C000, C0001.. C0062
 ;; C800, C8001
-ld hl,&C000
-ld b,160
-loopLine:
-	push bc
-		ld b,96 ;; B * 2 = pixels
-		push hl
-		loopRow:
-			ld a,%11000000
-			ld (hl),a
-			inc hl
-			djnz loopRow
+;ld hl,&C000
+;ld b,160
+;loopLine:
+;	push bc
+;		ld b,96 ;; B * 2 = pixels
+;		push hl
+;		loopRow:
+;			ld a,%00001100
+;			ld (hl),a
+;			inc hl
+;			djnz loopRow
 			;; next line will be currentLineNumber + &0800
 			;; this is still true even with a malformed screen
-		pop hl
-	pop bc
-	ld de,&0800
-	add hl,de
-	bit 7,h
-	jr nz,_loopLineDone
-		ld de,&C062
-		add hl,de
-_loopLineDone:
-	djnz loopLine	
+;		pop hl
+;	pop bc
+;	ld de,&0800
+;	add hl,de
+;	bit 7,h
+;	jr nz,_loopLineDone
+;		ld de,&C062
+;		add hl,de
+;_loopLineDone:
+;	djnz loopLine	
 
+	;ld hl,&8000
+	;ld d,h
+	;ld e,l
+	;inc de
+	;ld bc,&3DFF		;; Number of bytes to clear
+	;ld (hl),&00
+	;ldir	
 
 ;; Now do the same again, in &8000 using a different colour
-ld hl,&8000
-ld b,153
-loopLine1:
-	push bc
-		ld b,96 ;; B * 2 = pixels
-		push hl
-		loopRow1:
-			ld a,%00000011
-			ld (hl),a
-			inc hl
-			djnz loopRow1
+;ld hl,&8000
+;ld b,1
+;loopLine1:
+;	push bc
+;		ld b,96 ;; B * 2 = pixels
+;		push hl
+;		loopRow1:
+;			ld a,&30
+;			ld (hl),a
+;			inc hl
+;			djnz loopRow1
 			;; next line will be currentLineNumber + &0800
 			;; this is still true even with a malformed screen
-		pop hl
-	pop bc
-	ld de,&0800
-	add hl,de
-	bit 6,h
-	jr z,_loopLineDone1
-		ld de,&C062
-		add hl,de
-_loopLineDone1:
-	djnz loopLine1	
+;		pop hl
+;	pop bc
+;	ld de,&0800
+;	add hl,de
+;	bit 6,h
+;	jr z,_loopLineDone1
+;		ld de,&C062
+;		add hl,de
+;_loopLineDone1:
+;	djnz loopLine1	
 
 ei
 
@@ -182,7 +197,7 @@ SetScreenBottom:
 	out (c),c
 
 ret
-
+
 ScreenStartAddressFlag: db 48
 BackBufferAddress: dw &8000
 
@@ -191,3 +206,10 @@ BackBufferAddress: dw &8000
 ;;********************************************************
 read ".\libs\CPC_V2_SimpleScreenSetUp.asm"
 read ".\libs\CPC_V2_SimplePalette.asm"
+
+org &8000
+;read ".\screentest.asm"
+read ".\bottom1.asm"
+
+org &C000
+read ".\top.asm"
