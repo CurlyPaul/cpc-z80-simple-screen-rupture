@@ -71,7 +71,7 @@ GetScreenPosition:
 
 	;; Now calculate the xpos, this is much easier as these are linear on the screen screen				
 	ld a,b				; need to stash b as the next op insists on reading 16bit - we can't to ld c,(label)
-	ld bc,&8000	; bc now contains either &4000 or &C000, depending which cycle we are in
+	ld bc,&C000	; bc now contains either &4000 or &C000, depending which cycle we are in
 	ld c,a				; bc will now contain &40{x}
 	add hl,bc			; hl = hl + bc, add the x and y values together
 ret
@@ -86,8 +86,10 @@ GetNextLine:
 _screenBankMod_Minus1:
 	bit 7,h		;Change this to bit 6,h if your screen is at &8000!
 	jr nz,_getNextLineDone
-	ld de,&C060
-	add hl,de
+	push de
+		ld de,&C062 ;; Bytes per line
+		add hl,de
+	pop de
 _getNextLineDone:
 ret
 
@@ -130,26 +132,30 @@ ret
 ;    line 5 is at 2000 etc
 
 
+;; This is the look up for 98 bytes per row
+;; Mode 0 = 50 bytes per row
+;; 256*197 = 60 bytes per row
 align2
 scr_addr_table:
 	defw &0000,&0800,&1000,&1800,&2000,&2800,&3000,&3800
-	defw &0040,&0840,&1040,&1840,&2040,&2840,&3040,&3840
-	defw &0080,&0880,&1080,&1880,&2080,&2880,&3080,&3880
-	defw &00C0,&08C0,&10C0,&18C0,&20C0,&28C0,&30C0,&38C0
-	defw &0100,&0900,&1100,&1900,&2100,&2900,&3100,&3900
-	defw &0140,&0940,&1140,&1940,&2140,&2940,&3140,&3940
-	defw &0180,&0980,&1180,&1980,&2180,&2980,&3180,&3980
-	defw &01C0,&09C0,&11C0,&19C0,&21C0,&29C0,&31C0,&39C0
-	defw &0200,&0A00,&1200,&1A00,&2200,&2A00,&3200,&3A00
-	defw &0240,&0A40,&1240,&1A40,&2240,&2A40,&3240,&3A40
-	defw &0280,&0A80,&1280,&1A80,&2280,&2A80,&3280,&3A80
-	defw &02C0,&0AC0,&12C0,&1AC0,&22C0,&2AC0,&32C0,&3AC0
-	defw &0300,&0B00,&1300,&1B00,&2300,&2B00,&3300,&3B00
-	defw &0340,&0B40,&1340,&1B40,&2340,&2B40,&3340,&3B40
-	defw &0380,&0B80,&1380,&1B80,&2380,&2B80,&3380,&3B80
-	defw &03C0,&0BC0,&13C0,&1BC0,&23C0,&2BC0,&33C0,&3BC0
-	defw &0400,&0C00,&1400,&1C00,&2400,&2C00,&3400,&3C00
-	defw &0440,&0C40,&1440,&1C40,&2440,&2C40,&3440,&3C40
-	defw &0480,&0C80,&1480,&1C80,&2480,&2C80,&3480,&3C80
-	defw &04C0,&0CC0,&14C0,&1CC0,&24C0,&2CC0,&34C0,&3CC0
-	defw &0500,&0D00,&1500,&1D00,&2500,&2D00,&3500,&3D00
+	defw &0062,&0862,&1062,&1862,&2062,&2862,&3062,&3862
+	defw &00C4,&08C4,&10C4,&18C4,&20C4,&28C4,&30C4,&38C4
+	defw &0126,&0926,&1126,&1926,&2126,&2926,&3126,&3926
+	defw &0188,&0988,&1188,&1988,&2188,&2988,&3188,&3988
+	defw &01EA,&09EA,&11EA,&19EA,&21EA,&29EA,&31EA,&39EA
+	defw &024C,&0A4C,&124C,&1A4C,&224C,&2A4C,&324C,&3A4C
+	defw &02AE,&0AAE,&12AE,&1AAE,&22AE,&2AAE,&32AE,&3AAE
+	defw &0310,&0B10,&1310,&1B10,&2310,&2B10,&3310,&3B10
+	defw &0372,&0B72,&1372,&1B72,&2372,&2B72,&3372,&3B72
+	defw &03D4,&0BD4,&13D4,&1BD4,&23D4,&2BD4,&33D4,&3BD4
+	defw &0436,&0C36,&1436,&1C36,&2436,&2C36,&3436,&3C36
+	defw &0498,&0C98,&1498,&1C98,&2498,&2C98,&3498,&3C98
+	defw &04FA,&0CFA,&14FA,&1CFA,&24FA,&2CFA,&34FA,&3CFA
+	defw &055C,&0D5C,&155C,&1D5C,&255C,&2D5C,&355C,&3D5C
+	defw &05BE,&0DBE,&15BE,&1DBE,&25BE,&2DBE,&35BE,&3DBE
+	defw &0620,&0E20,&1620,&1E20,&2620,&2E20,&3620,&3E20
+	defw &0682,&0E82,&1682,&1E82,&2682,&2E82,&3682,&3E82
+	defw &06E4,&0EE4,&16E4,&1EE4,&26E4,&2EE4,&36E4,&3EE4
+	defw &0746,&0F46,&1746,&1F46,&2746,&2F46,&3746,&3F46
+	defw &07A8,&0FA8,&17A8,&1FA8,&27A8,&2FA8,&37A8,&3FA8
+
