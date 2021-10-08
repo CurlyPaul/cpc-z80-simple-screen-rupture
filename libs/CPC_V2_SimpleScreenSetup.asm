@@ -84,7 +84,10 @@ GetNextLine:
 	ld h,a				; put the value back in h
 
 _screenBankMod_Minus1:
-	bit 7,h		;Change this to bit 6,h if your screen is at &8000!
+	bit 7,h
+	;;&207C ;; bit 7,h JR NZ // C000
+	;;&2874 ;; bit 6,h JR Z	// 8000
+	;;&287C ;; bit 7,h JR Z	// 4000	
 	jr nz,_getNextLineDone
 	push de
 		ld de,&C062 ;; Bytes per line

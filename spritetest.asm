@@ -1,4 +1,7 @@
 org &4000
+ld sp,&BFFF
+
+;write ".\raw.bin"
 
 run start
 start:

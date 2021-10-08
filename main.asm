@@ -1,4 +1,4 @@
-org &4000
+org &200
 run start
 
 start:
@@ -22,8 +22,11 @@ ei
 
 call SetPalette1
 
-loop:
-; int 1
+;; 50 * 4 vsyncs == 4seconds
+ld l,50*4
+
+wait4Secondsloop:
+	
 	call WaitFrame
 	;; from here I have 16810 clock cycles before I need to force the vsync
 
@@ -32,51 +35,13 @@ loop:
 	ld bc,&bdff			;Set VSCYNC=255 (Impossible...Disables Vsync)
 	out (c),c
 
-;; This is VDISP and controls if borders are to be displayed by alternating between 255 and 0?
-;; Don't fully understand the values I've seen people use, but seems crucial for keeping the screen stable if it is less than fullscreen
-	;ld bc,&BC06
-	;out (c),c
-	;ld bc,&BD00+25
-	;out (c),c
-
 	call SetScreenBottom
-	
-	ld hl, &C200	;; Screen address of X+Width,Y
-	ld de,CEE2
-	ld iyl,80		;; Total lines 88, currenlty all minus 1 to allow me to debug
-	call DrawSprite
-	;; 281 per line
-	;; 90 lines = 
-	;nop
-; int 2 
-	;halt
-	;nop
-; int 3
-;; draw the first chunk of the next letter
-	
-	;halt
-	;nop	
-; int 4
-	;ld iyl,10
-	;call DrawSprite
-
-	;nop
-	;halt
-	;nop
-	;nop
-; int 5
-	;ld iyl,11
-	;call DrawSprite
-
-	;halt
-	;nop
-
-	;ld iyl,11
-	;call DrawSprite
-; int 6
-	nop
 	halt
-	nop
+	halt
+	halt
+	halt
+	halt
+	halt
 	call SetScreenTop
 
 	ld bc,&bc07			;Vertical Sync position (VSYNC)
@@ -84,7 +49,426 @@ loop:
 	ld bc,&bd00			;Set VSCYNC=0 now!
 	out (c),c
 
-jr loop
+	dec l
+	jr nz,wait4Secondsloop
+
+drawCee:
+	call WaitFrame
+	;; from here I have 16810 clock cycles before I need to force the vsync
+
+	ld bc,&bc07			;Vertical Sync position (VSYNC)
+	out (c),c
+	ld bc,&bdff			;Set VSCYNC=255 (Impossible...Disables Vsync)
+	out (c),c
+
+	call SetScreenBottom
+
+	;; This happens to be about the right length...	
+	ld hl, &C1EE
+	ld de,CEE
+	ld iyl,71		
+	call DrawSprite
+	
+	;; .. to end up calling this in the right place
+	call SetScreenTop
+
+	ld bc,&bc07			;Vertical Sync position (VSYNC)
+	out (c),c
+	ld bc,&bd00			;Set VSCYNC=0 now!
+	out (c),c
+
+	call WaitFrame
+
+	ld bc,&bc07			;Vertical Sync position (VSYNC)
+	out (c),c
+	ld bc,&bdff			;Set VSCYNC=255 (Impossible...Disables Vsync)
+	out (c),c
+
+	call SetScreenBottom
+
+	halt
+	
+
+	ld iyl,19			;; Draws the rest of CEE where we left of last time		
+	call DrawSprite
+	;halt
+
+	halt
+	halt
+	halt
+	;; Done with the sprite, so switch the buffer for the top screen
+	ld hl,TopScreenAddrMod-2
+	ld (hl),48 	;;&C000
+
+	;; Change next line code to work when drawing in 4000
+	ld hl,&287C		;; Byte code for: Bit 7,JR Z
+	ld (_screenBankMod_Minus1+1),hl
+
+	halt
+
+	call SetScreenTop
+	ld bc,&bc07			;Vertical Sync position (VSYNC)
+	out (c),c
+	ld bc,&bd00	;		;Set VSCYNC=0 now!
+	out (c),c
+
+ld l,50
+waitForArrloop:
+	
+	call WaitFrame
+	;; from here I have 16810 clock cycles before I need to force the vsync
+
+	ld bc,&bc07			;Vertical Sync position (VSYNC)
+	out (c),c
+	ld bc,&bdff			;Set VSCYNC=255 (Impossible...Disables Vsync)
+	out (c),c
+
+	call SetScreenBottom
+	halt
+	halt
+	halt
+	halt
+	halt
+	halt
+	call SetScreenTop
+
+	ld bc,&bc07			;Vertical Sync position (VSYNC)
+	out (c),c
+	ld bc,&bd00			;Set VSCYNC=0 now!
+	out (c),c
+
+	dec l
+	jr nz,waitForArrloop
+
+drawArr:
+	call WaitFrame
+	;; from here I have 16810 clock cycles before I need to force the vsync
+
+	ld bc,&bc07			;Vertical Sync position (VSYNC)
+	out (c),c
+	ld bc,&bdff			;Set VSCYNC=255 (Impossible...Disables Vsync)
+	out (c),c
+
+	call SetScreenBottom
+
+	;; This time the back buffer is at &4000	
+	ld hl, &4200	;; Screen address of X+Width,Y
+	ld de,ARR
+	ld iyl,71		
+	call DrawSprite
+	
+	call SetScreenTop
+
+	ld bc,&bc07			;Vertical Sync position (VSYNC)
+	out (c),c
+	ld bc,&bd00			;Set VSCYNC=0 now!
+	out (c),c
+
+	call WaitFrame
+
+	ld bc,&bc07			;Vertical Sync position (VSYNC)
+	out (c),c
+	ld bc,&bdff			;Set VSCYNC=255 (Impossible...Disables Vsync)
+	out (c),c
+
+	call SetScreenBottom
+
+	halt
+	
+	ld iyl,19			;; Draws the rest of ARR where we left of last time		
+	call DrawSprite
+	;halt
+
+	halt
+	halt
+	halt
+	;; Done with the sprite, so switch the buffer for the top screen
+	ld hl,TopScreenAddrMod-2
+	ld (hl),16 	;;&4000
+
+	;; Change next line function
+	ld hl,&207C ;; bit 7,h JR NZ // C000
+	ld (_screenBankMod_Minus1+1),hl
+
+	halt
+
+	
+	;; .. to end up calling this in the right place
+	call SetScreenTop
+	ld bc,&bc07			;Vertical Sync position (VSYNC)
+	out (c),c
+	ld bc,&bd00	;		;Set VSCYNC=0 now!
+	out (c),c
+
+
+ld l,60
+waitForTeeloop:
+	
+	call WaitFrame
+	;; from here I have 16810 clock cycles before I need to force the vsync
+
+	ld bc,&bc07			;Vertical Sync position (VSYNC)
+	out (c),c
+	ld bc,&bdff			;Set VSCYNC=255 (Impossible...Disables Vsync)
+	out (c),c
+
+	call SetScreenBottom
+	halt
+	halt
+	halt
+	halt
+	halt
+	halt
+	call SetScreenTop
+
+	ld bc,&bc07			;Vertical Sync position (VSYNC)
+	out (c),c
+	ld bc,&bd00			;Set VSCYNC=0 now!
+	out (c),c
+
+	dec l
+	jr nz,waitForTeeloop
+
+drawTee:
+	call WaitFrame
+	;; from here I have 16810 clock cycles before I need to force the vsync
+
+	ld bc,&bc07			;Vertical Sync position (VSYNC)
+	out (c),c
+	ld bc,&bdff			;Set VSCYNC=255 (Impossible...Disables Vsync)
+	out (c),c
+
+	call SetScreenBottom
+
+	;; This happens to be about the right length...	
+	ld hl, &C212	;; Screen address of X+Width,Y
+	ld de,TEE
+	ld iyl,71		
+	call DrawSprite
+	
+	;; .. to end up calling this in the right place
+	call SetScreenTop
+
+	ld bc,&bc07			;Vertical Sync position (VSYNC)
+	out (c),c
+	ld bc,&bd00			;Set VSCYNC=0 now!
+	out (c),c
+
+	call WaitFrame
+
+	ld bc,&bc07			;Vertical Sync position (VSYNC)
+	out (c),c
+	ld bc,&bdff			;Set VSCYNC=255 (Impossible...Disables Vsync)
+	out (c),c
+
+	call SetScreenBottom
+
+	halt
+	
+	ld iyl,19			;; Draws the rest of ARR where we left of last time		
+	call DrawSprite
+	;halt
+
+	halt
+	halt
+	halt
+	;; Done with the sprite, so switch the buffer for the top screen
+	ld hl,TopScreenAddrMod-2
+	ld (hl),48 	;;&C000
+
+	;; Change next line function
+	ld hl,&287C ;; bit 7,h JR Z	// 4000	
+	ld (_screenBankMod_Minus1+1),hl
+
+	halt
+
+	
+	;; .. to end up calling this in the right place
+	call SetScreenTop
+	ld bc,&bc07			;Vertical Sync position (VSYNC)
+	out (c),c
+	ld bc,&bd00	;		;Set VSCYNC=0 now!
+	out (c),c
+
+ld l,20
+waitForCee2loop:
+	
+	call WaitFrame
+	;; from here I have 16810 clock cycles before I need to force the vsync
+
+	ld bc,&bc07			;Vertical Sync position (VSYNC)
+	out (c),c
+	ld bc,&bdff			;Set VSCYNC=255 (Impossible...Disables Vsync)
+	out (c),c
+
+	call SetScreenBottom
+	halt
+	halt
+	halt
+	halt
+	halt
+	halt
+	call SetScreenTop
+
+	ld bc,&bc07			;Vertical Sync position (VSYNC)
+	out (c),c
+	ld bc,&bd00			;Set VSCYNC=0 now!
+	out (c),c
+
+	dec l
+	jr nz,waitForCee2loop
+
+drawCee2:
+	;; So far the letters have been drawn on alternating back buffers
+	;; To see them all together, we need to draw another C and T first
+	call WaitFrame
+
+	ld bc,&bc07			;Vertical Sync position (VSYNC)
+	out (c),c
+	ld bc,&bdff			;Set VSCYNC=255 (Impossible...Disables Vsync)
+	out (c),c
+
+	call SetScreenBottom
+	
+	ld hl, &41EE	;; Screen address of X+Width,Y
+	ld de,CEE
+	ld iyl,71		
+	call DrawSprite
+	
+	call SetScreenTop
+
+	ld bc,&bc07			;Vertical Sync position (VSYNC)
+	out (c),c
+	ld bc,&bd00			;Set VSCYNC=0 now!
+	out (c),c
+
+	call WaitFrame
+
+	ld bc,&bc07			;Vertical Sync position (VSYNC)
+	out (c),c
+	ld bc,&bdff			;Set VSCYNC=255 (Impossible...Disables Vsync)
+	out (c),c
+
+	call SetScreenBottom
+
+	halt
+	
+	ld iyl,19			;; Draws the rest of ARR where we left of last time		
+	call DrawSprite
+
+	ld hl, &4212	;; Screen address of X+Width,Y
+	ld de,TEE
+	ld iyl,52		
+	call DrawSprite
+	
+	call SetScreenTop
+	ld bc,&bc07			;Vertical Sync position (VSYNC)
+	out (c),c
+	ld bc,&bd00	;		;Set VSCYNC=0 now!
+	out (c),c
+
+	ld bc,&bc07			;Vertical Sync position (VSYNC)
+	out (c),c
+	ld bc,&bd00	;		;Set VSCYNC=0 now!
+	out (c),c
+
+	call WaitFrame
+
+	ld bc,&bc07			;Vertical Sync position (VSYNC)
+	out (c),c
+	ld bc,&bdff			;Set VSCYNC=255 (Impossible...Disables Vsync)
+	out (c),c
+
+	call SetScreenBottom
+
+	ld iyl,48			;; Draws the rest of ARR where we left of last time		
+	call DrawSprite
+
+	halt
+
+	call WaitFrame
+	;; from here I have 16810 clock cycles before I need to force the vsync
+
+	ld bc,&bc07			;Vertical Sync position (VSYNC)
+	out (c),c
+	ld bc,&bdff			;Set VSCYNC=255 (Impossible...Disables Vsync)
+	out (c),c
+
+	call SetScreenBottom
+
+	ld hl, &4224	;; Screen address of X+Width,Y
+	ld de,CEE2
+	ld iyl,71		
+	call DrawSprite
+	
+	call SetScreenTop
+
+	ld bc,&bc07			;Vertical Sync position (VSYNC)
+	out (c),c
+	ld bc,&bd00			;Set VSCYNC=0 now!
+	out (c),c
+
+	call WaitFrame
+
+	ld bc,&bc07			;Vertical Sync position (VSYNC)
+	out (c),c
+	ld bc,&bdff			;Set VSCYNC=255 (Impossible...Disables Vsync)
+	out (c),c
+
+	call SetScreenBottom
+
+	halt
+	
+	ld iyl,19			;; Draws the rest of ARR where we left of last time		
+	call DrawSprite
+	;halt
+
+	halt
+	halt
+	halt
+	;; Done with the sprite, so switch the buffer for the top screen
+	ld hl,TopScreenAddrMod-2
+	ld (hl),16 	;;&4000
+
+	;; Change next line function
+	ld hl,&207C ;; bit 7,h JR NZ // C000
+	ld (_screenBankMod_Minus1+1),hl
+
+	halt
+
+	
+	call SetScreenTop
+
+	ld bc,&bc07			;Vertical Sync position (VSYNC)
+	out (c),c
+	ld bc,&bd00	;		;Set VSCYNC=0 now!
+	out (c),c
+
+
+finalloop:
+	
+	call WaitFrame
+	;; from here I have 16810 clock cycles before I need to force the vsync
+
+	ld bc,&bc07			;Vertical Sync position (VSYNC)
+	out (c),c
+	ld bc,&bdff			;Set VSCYNC=255 (Impossible...Disables Vsync)
+	out (c),c
+
+	call SetScreenBottom
+	halt
+	halt
+	halt
+	halt
+	halt
+	halt
+	call SetScreenTop
+
+	ld bc,&bc07			;Vertical Sync position (VSYNC)
+	out (c),c
+	ld bc,&bd00			;Set VSCYNC=0 now!
+	out (c),c
+jr finalloop
 
 DrawSprite:
 	;; Inputs: 
@@ -374,7 +758,7 @@ SetScreenTop:
 
 	ld bc,&BC0C ;; R10 DISPH Display start address
 	out (c),c
-	ld bc,&BD00+48 ;; &C000
+	ld bc,&BD00+16: TopScreenAddrMod ;; &4000
 	out (c),c
 ret
 
@@ -427,8 +811,13 @@ incbin ".\res\tee.bin"
 .CEE2
 incbin ".\res\cee2.bin"
 
+;; TODO This is stupidily inefficient to load into a real machine
+org &4000
+incbin ".\res\top.bin"
+
 org &8000
 incbin ".\res\bottom.bin"
 
 org &C000
 incbin ".\res\top.bin"
+

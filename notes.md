@@ -44,6 +44,22 @@ but I can probably just about do it within a vertical blank
 - Have a look at drawing with the SP, can I copy the bytes fast enough before the beam hits the bottom?
 
 
+** Next plan        
+
+So even with fastest code, I can't draw an entire letter on the screen in one frame
+
+But... have I got time while
+
+drawing screen 8000 (bottom), bank switch C000 out and back buffer in
+draw half of it, and bank switch back again before time runs out
+does this even work in theory?? 
+
+** even further plan..
+
+How could I animate the background??
+
+
+
 
 
 
